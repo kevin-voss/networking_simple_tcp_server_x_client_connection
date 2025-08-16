@@ -9,32 +9,31 @@
 #include <arpa/inet.h> // Required for inet_ntoa
 #include <cstring> // Required for strcpy
 #include <thread> // Required for multithreading
+#include <map> // Required for std::map
+#include <mutex> // Required for std::mutex
 #include "utils/httprequest.h"
 #include "utils/httprequest_parser.h"
 #include "controllers/health_controller.h"
 #include "controllers/metrics_controller.h"
 #include "controllers/hello_controller.h"
 #include "controllers/bye_controller.h"
+#include "utils/logger.h"
 
-// Basic logging function
-void log_message(const std::string& level, const std::string& message) {
-    auto now = std::chrono::system_clock::now();
-    std::time_t current_time = std::chrono::system_clock::to_time_t(now);
-
-    std::cout << "[" << std::put_time(std::localtime(&current_time), "%Y-%m-%d %H:%M:%S")
-              << "] [" << level << "] " << message << std::endl;
-}
+// Global metrics
+std::map<std::string, int> endpoint_counts;
+std::mutex metrics_mutex;
+int total_requests_count = 0;
 
 // Function to handle a single client connection
 void handle_client(int client_socket, const std::string& client_ip, int client_port) {
-    log_message("INFO", "Handling client " + client_ip + ":" + std::to_string(client_port) + " in a new thread.");
+    Logger::getInstance().log("INFO", "Handling client " + client_ip + ":" + std::to_string(client_port) + " in a new thread.");
 
     // 5. Receive data from the client
     char buffer[1024] = {0};
     long valread = read(client_socket, buffer, 1024);
     std::string client_message(buffer); // Convert char array to std::string
 
-    log_message("INFO", "Client message from " + client_ip + ":" + std::to_string(client_port) + ": " + client_message);
+    Logger::getInstance().log("INFO", "Client message from " + client_ip + ":" + std::to_string(client_port) + ": " + client_message);
 
     HttpRequest request = HttpRequestParser::parse(client_message);
 
@@ -42,13 +41,13 @@ void handle_client(int client_socket, const std::string& client_ip, int client_p
     if (request.query_params.count("block")) {
         try {
             int block_duration = std::stoi(request.query_params["block"]);
-            log_message("INFO", "Thread for client " + client_ip + ":" + std::to_string(client_port) + " blocking for " + std::to_string(block_duration) + " seconds.");
+            Logger::getInstance().log("INFO", "Thread for client " + client_ip + ":" + std::to_string(client_port) + " blocking for " + std::to_string(block_duration) + " seconds.");
             std::this_thread::sleep_for(std::chrono::seconds(block_duration));
-            log_message("INFO", "Thread for client " + client_ip + ":" + std::to_string(client_port) + " unblocked.");
+            Logger::getInstance().log("INFO", "Thread for client " + client_ip + ":" + std::to_string(client_port) + " unblocked.");
         } catch (const std::invalid_argument& e) {
-            log_message("WARN", "Invalid 'block' parameter for client " + client_ip + ":" + std::to_string(client_port) + ". Ignoring. Error: " + e.what());
+            Logger::getInstance().log("WARN", "Invalid 'block' parameter for client " + client_ip + ":" + std::to_string(client_port) + ". Ignoring. Error: " + e.what());
         } catch (const std::out_of_range& e) {
-            log_message("WARN", "'block' parameter out of range for client " + client_ip + ":" + std::to_string(client_port) + ". Ignoring. Error: " + e.what());
+            Logger::getInstance().log("WARN", "'block' parameter out of range for client " + client_ip + ":" + std::to_string(client_port) + ". Ignoring. Error: " + e.what());
         }
     }
 
@@ -57,7 +56,9 @@ void handle_client(int client_socket, const std::string& client_ip, int client_p
     if (request.path == "/health") {
         response = getHealthStatus(request);
     } else if (request.path == "/metrics") {
-        response = getMetrics(request);
+        // Acquire lock for reading metrics
+        std::lock_guard<std::mutex> guard(metrics_mutex);
+        response = getMetrics(request, total_requests_count, endpoint_counts);
     } else if (request.path == "/hello") {
         response = getHello(request);
     } else if (request.path == "/bye") {
@@ -66,19 +67,37 @@ void handle_client(int client_socket, const std::string& client_ip, int client_p
         response = "HTTP/1.1 404 Not Found\nContent-Type: text/plain\n\nUnknown endpoint\n";
     }
 
+    // Update metrics
+    { // Scoped lock for metrics_mutex
+        std::lock_guard<std::mutex> guard(metrics_mutex);
+        total_requests_count++;
+        // Increment specific endpoint counter
+        if (request.path == "/health") {
+            endpoint_counts["/health"]++;
+        } else if (request.path == "/metrics") {
+            endpoint_counts["/metrics"]++;
+        } else if (request.path == "/hello") {
+            endpoint_counts["/hello"]++;
+        } else if (request.path == "/bye") {
+            endpoint_counts["/bye"]++;
+        } else {
+            endpoint_counts["unknown"]++;
+        }
+    }
+
     send(client_socket, response.c_str(), response.length(), 0);
-    log_message("INFO", "Response sent to client " + client_ip + ":" + std::to_string(client_port) + ".");
+    Logger::getInstance().log("INFO", "Response sent to client " + client_ip + ":" + std::to_string(client_port) + ".");
 
     // 7. Close the client socket (connection to this specific client)
     close(client_socket);
-    log_message("INFO", "Client " + client_ip + ":" + std::to_string(client_port) + " disconnected.");
+    Logger::getInstance().log("INFO", "Client " + client_ip + ":" + std::to_string(client_port) + " disconnected.");
 }
 
 int main() {
     // 1. Create a socket
     int server_fd;
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        log_message("ERROR", "socket failed");
+        Logger::getInstance().log("ERROR", "socket failed");
         exit(EXIT_FAILURE);
     }
 
@@ -90,24 +109,24 @@ int main() {
     address.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        log_message("ERROR", "bind failed");
+        Logger::getInstance().log("ERROR", "bind failed");
         exit(EXIT_FAILURE);
     }
 
     // 3. Listen for incoming connections
     if (listen(server_fd, 3) < 0) { // 3 is the maximum length of the queue of pending connections
-        log_message("ERROR", "listen failed");
+        Logger::getInstance().log("ERROR", "listen failed");
         exit(EXIT_FAILURE);
     }
 
-    log_message("INFO", "Server listening on port " + std::to_string(port));
+    Logger::getInstance().log("INFO", "Server listening on port " + std::to_string(port));
 
     while (true) { // Main server loop to continuously accept connections
         // 4. Accept a client connection
         int client_socket;
         socklen_t addrlen = sizeof(address);
         if ((client_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
-            log_message("ERROR", "accept failed");
+            Logger::getInstance().log("ERROR", "accept failed");
             continue; // Continue listening for other connections
         }
 
@@ -120,10 +139,10 @@ int main() {
         if (getpeername(client_socket, (struct sockaddr *)&client_address, &client_addrlen) == 0) {
             inet_ntop(AF_INET, &(client_address.sin_addr), client_ip, INET_ADDRSTRLEN);
             client_port = ntohs(client_address.sin_port);
-            log_message("INFO", "Client connected from " + std::string(client_ip) + ":" + std::to_string(client_port));
+            Logger::getInstance().log("INFO", "Client connected from " + std::string(client_ip) + ":" + std::to_string(client_port));
         } else {
-            log_message("ERROR", "getpeername failed");
-            log_message("INFO", "Client connected!"); // Fallback if getpeername fails
+            Logger::getInstance().log("ERROR", "getpeername failed");
+            Logger::getInstance().log("INFO", "Client connected!"); // Fallback if getpeername fails
             // Assign dummy values if getpeername fails to avoid uninitialized variable use
             strcpy(client_ip, "UNKNOWN");
             client_port = 0;

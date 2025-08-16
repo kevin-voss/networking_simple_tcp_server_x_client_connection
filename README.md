@@ -20,6 +20,7 @@ This project provides a comprehensive demonstration of TCP client-server communi
 *   [Project Structure](#project-structure)
 *   [Server Concurrency with Multithreading](#server-concurrency-with-multithreading)
     *   [Simulating a Blocked Thread](#simulating-a-blocked-thread)
+*   [Monitoring and Logging](#monitoring-and-logging)
 *   [Running the Applications (Manual Docker Commands)](#running-the-applications-manual-docker-commands)
 *   [How it Works (Docker Networking)](#how-it-works-docker-networking)
 *   [Cleanup Docker Resources](#cleanup-docker-resources)
@@ -196,6 +197,53 @@ GET /hello?block=5 HTTP/1.1
 Host: localhost:8080
 
 ```
+
+## Monitoring and Logging
+
+This project incorporates basic monitoring and enhanced logging capabilities to provide operational visibility into the running server. This helps in understanding server behavior, tracking performance, and troubleshooting issues.
+
+### Metrics Endpoint (`/metrics`)
+
+**Purpose:** The server exposes a `/metrics` endpoint that provides real-time operational metrics in a Prometheus-compatible text format. This allows external monitoring systems (like Prometheus) to scrape and visualize the server's performance.
+
+**Exposed Metrics:**
+
+*   `http_requests_total`: A counter for the total number of HTTP requests handled by the server since its startup.
+*   `http_requests_endpoint_total`: Counters for the number of requests served per individual endpoint (e.g., `/hello`, `/bye`, `/health`, `/metrics`).
+
+**Format:** The metrics are exposed in the [Prometheus text exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/). This format is human-readable and easily parsable by Prometheus scrapers.
+
+**Example Output (access by navigating to `/metrics`):**
+
+```
+# HELP http_requests_total Total number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total 10
+
+# HELP http_requests_endpoint_total Total number of HTTP requests per endpoint.
+# TYPE http_requests_endpoint_total counter
+http_requests_endpoint_total{endpoint="_hello"} 5
+http_requests_endpoint_total{endpoint="_bye"} 3
+http_requests_endpoint_total{endpoint="_health"} 2
+```
+
+### File Logging
+
+In addition to writing logs to the standard console output, the server now writes all log messages to a file inside the container. This provides a persistent record of server activity, which is crucial for post-mortem analysis and detailed debugging.
+
+**Log File Location:**
+
+*   Inside the `server` container: `/var/log/server/server.log`
+
+**Accessing the Log File from Host:**
+
+You can retrieve the log file from a running server container to your local machine using the `docker cp` command:
+
+```bash
+docker cp networking-server-1:/var/log/server/server.log ./server_logs.log
+```
+
+This command will copy the `server.log` file from the `networking-server-1` container to your current directory on the host machine as `server_logs.log`.
 
 ## Running the Applications (Manual Docker Commands)
 
