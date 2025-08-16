@@ -7,8 +7,12 @@
 #include <ctime>    // For std::time_t, std::localtime
 #include <iomanip>  // For std::put_time
 #include <arpa/inet.h> // Required for inet_ntoa
+#include "httprequest.h"
+#include "httprequest_parser.h"
 #include "controllers/health_controller.h"
 #include "controllers/metrics_controller.h"
+#include "controllers/hello_controller.h"
+#include "controllers/bye_controller.h"
 
 // Basic logging function
 void log_message(const std::string& level, const std::string& message) {
@@ -76,16 +80,18 @@ int main() {
 
         log_message("INFO", "Client message: " + client_message);
 
+        HttpRequest request = HttpRequestParser::parse(client_message);
+
         // 6. Send a response back to the client based on the message
         std::string response;
-        if (client_message.find("GET /health") != std::string::npos) {
-            response = getHealthStatus();
-        } else if (client_message.find("GET /metrics") != std::string::npos) {
-            response = getMetrics();
-        } else if (client_message.find("GET /hello") != std::string::npos) {
-            response = "HTTP/1.1 200 OK\nContent-Type: text/plain\n\nHello, World!\n";
-        } else if (client_message.find("GET /bye") != std::string::npos) {
-            response = "HTTP/1.1 200 OK\nContent-Type: text/plain\n\nGoodbye!\n";
+        if (request.path == "/health") {
+            response = getHealthStatus(request);
+        } else if (request.path == "/metrics") {
+            response = getMetrics(request);
+        } else if (request.path == "/hello") {
+            response = getHello(request);
+        } else if (request.path == "/bye") {
+            response = getBye(request);
         } else {
             response = "HTTP/1.1 404 Not Found\nContent-Type: text/plain\n\nUnknown endpoint\n";
         }

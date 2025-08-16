@@ -70,7 +70,12 @@ networking/
 │   ├── src/
 │   │   ├── controllers/      # Directory for endpoint logic
 │   │   │   ├── health_controller.cpp
-│   │   │   └── metrics_controller.cpp
+│   │   │   ├── metrics_controller.cpp
+│   │   │   ├── hello_controller.cpp
+│   │   │   └── bye_controller.cpp
+│   │   ├── httprequest.h         # Defines the HttpRequest struct
+│   │   ├── httprequest_parser.h  # Declares the HttpRequestParser class
+│   │   ├── httprequest_parser.cpp# Implements the HttpRequestParser class
 │   │   └── server.cpp        # C++ source code for the TCP server
 │   └── Dockerfile            # Dockerfile to build the server image
 ├── client/
@@ -86,7 +91,9 @@ networking/
 *   `docker-compose.yml`: Defines and runs the multi-container Docker application.
 *   `Makefile`: Defines commands for building, running, and managing Docker resources.
 *   `server/`: Contains all files related to the TCP server application.
-*   `server/src/controllers/`: Contains separate source files for different server endpoints.
+*   `server/src/controllers/`: Contains separate source files for different server endpoints (e.g., `/health`, `/metrics`, `/hello`, `/bye`).
+*   `server/src/httprequest.h`: Defines the `HttpRequest` structure used to represent parsed incoming HTTP requests, including method, path, headers, body, and query parameters.
+*   `server/src/httprequest_parser.h` and `server/src/httprequest_parser.cpp`: Provide the logic for parsing raw HTTP requests into a structured `HttpRequest` object, similar to `HttpServletRequest` in Spring Boot.
 *   `client/`: Contains all files related to the TCP client application.
 
 ## Prerequisites
@@ -160,7 +167,7 @@ This section details how to run the applications using individual `docker run` c
     ```
     *   `--rm`: Automatically removes the container once it exits.
 
-    You should see the client's output directly in your terminal, showing it connected to the server, sending `GET /hello`, receiving a response, then reconnecting, sending `GET /bye`, and receiving another response. Now, the server also supports `/health` and `/metrics` endpoints. You can modify `client.cpp` to experiment with these new endpoints.
+    You should see the client's output directly in your terminal, showing it connected to the server, sending `GET /hello`, receiving a response, then reconnecting, sending `GET /bye`, and receiving another response. Now, the server also supports `/health` and `/metrics` endpoints. The client has also been refactored to use a `fetch` function to simplify sending multiple requests.
     To observe the server's behavior and confirm client connections (including their IP addresses and ports), view the server logs:
     ```bash
     docker logs tcp-server-container

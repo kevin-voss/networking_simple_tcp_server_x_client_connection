@@ -2,15 +2,17 @@ FROM ubuntu:latest
 
 WORKDIR /app
 
-COPY src/server.cpp .
-COPY src/controllers/ controllers/
+COPY src/ ./
 
 RUN apt-get update && \
     apt-get install -y build-essential && \
     g++ -c server.cpp -o server.o && \
-    g++ -c controllers/health_controller.cpp -o controllers/health_controller.o && \
-    g++ -c controllers/metrics_controller.cpp -o controllers/metrics_controller.o && \
-    g++ server.o controllers/health_controller.o controllers/metrics_controller.o -o server
+    g++ -c httprequest_parser.cpp -o httprequest_parser.o && \
+    g++ -c controllers/health_controller.cpp -o health_controller.o && \
+    g++ -c controllers/metrics_controller.cpp -o metrics_controller.o && \
+    g++ -c controllers/hello_controller.cpp -o hello_controller.o && \
+    g++ -c controllers/bye_controller.cpp -o bye_controller.o && \
+    g++ server.o httprequest_parser.o health_controller.o metrics_controller.o hello_controller.o bye_controller.o -o server
 
 EXPOSE 8080
 

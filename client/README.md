@@ -8,84 +8,37 @@ The client's primary role in a TCP communication is to establish a connection wi
 
 ## Key Components and Flow (`client/src/client.cpp`)
 
-The client's code performs the following main steps:
+The client's code has been refactored to use a `fetch` function, which simplifies sending multiple HTTP GET requests to the server. The `fetch` function encapsulates the logic for establishing a connection, sending a request, and receiving a response.
 
-1.  **Address Resolution:** The client needs to know where to connect. Instead of a hardcoded IP address, we use `getaddrinfo` to resolve the server's hostname (e.g., `"tcp-server-container"` in our Docker setup) into an actual network address. This is crucial for Dockerized environments where IP addresses are dynamic.
+Here's how the `fetch` function works:
 
-    ```cpp
-    // Key part: Resolving server address by name
-    std::string server_name = "tcp-server-container";
+```cpp
+std::string fetch(const std::string& path, const std::string& server_address, int port) {
+    // 1. Address Resolution: Resolves the server's hostname.
+    // 2. Socket Creation: Creates a new socket.
+    // 3. Connection Establishment: Connects to the server.
+    // 4. Sending Data: Sends the GET request for the specified path.
+    // 5. Receiving Response: Reads the server's response.
+    // 6. Closing Connection: Closes the socket.
+    // Returns the server's response string.
+}
+```
+
+And here's how it's used in the `main` function to make requests to various endpoints:
+
+```cpp
+int main() {
     int port = 8080;
-    struct addrinfo hints, *res;
-    // ... (setting up hints for getaddrinfo)
-    if ((status = getaddrinfo(server_name.c_str(), std::to_string(port).c_str(), &hints, &res)) != 0) {
-        // Error handling
-    }
-    // ... (looping through results and connecting)
-    ```
+    std::string server_address = "server"; 
 
-2.  **Socket Creation:** A socket is created. This is the endpoint through which the client will communicate.
+    fetch("/hello", server_address, port);
+    fetch("/bye", server_address, port);
+    fetch("/health", server_address, port);
+    fetch("/metrics", server_address, port);
 
-    ```cpp
-    if ((sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-        // Error handling
-    }
-    ```
-
-3.  **Connection Establishment:** The client attempts to connect to the server using the resolved address and the created socket. This initiates the TCP three-way handshake.
-
-    ```cpp
-    if (connect(sock, p->ai_addr, p->ai_addrlen) == -1) {
-        // Error handling
-    }
-    std::cout << "Connected to server." << std::endl;
-    ```
-
-4.  **Sending Data:** Once connected, the client sends its messages to the server. Now, instead of a single message, it sends specific strings for `/hello` and `/bye`.
-
-    ```cpp
-    // Send GET /hello request
-    std::string hello_message = "GET /hello\n";
-    send(sock, hello_message.c_str(), hello_message.length(), 0);
-    std::cout << "Message sent: " << hello_message << std::endl;
-
-    // Receive response for /hello
-    char buffer_hello[1024] = {0};
-    read(sock, buffer_hello, 1024);
-    std::cout << "Server response for /hello: " << buffer_hello << std::endl;
-
-    // You can now also try with other endpoints like /health or /metrics
-    // For example:
-    // std::string health_message = "GET /health\n";
-    // send(sock, health_message.c_str(), health_message.length(), 0);
-    // char buffer_health[1024] = {0};
-    // read(sock, buffer_health, 1024);
-    // std::cout << "Server response for /health: " << buffer_health << std::endl;
-
-    // Send GET /bye request
-    std::string bye_message = "GET /bye\n";
-    send(sock, bye_message.c_str(), bye_message.length(), 0);
-    std::cout << "Message sent: " << bye_message << std::endl;
-
-    // Receive response for /bye
-    char buffer_bye[1024] = {0};
-    read(sock, buffer_bye, 1024);
-    std::cout << "Server response for /bye: " << buffer_bye << std::endl;
-    ```
-
-5.  **Receiving Response:** The client then waits for and receives a response from the server.
-
-    ```cpp
-    char buffer[1024] = {0};
-    read(sock, buffer, 1024);
-    std::cout << "Server response: " << buffer << std::endl;
-    ```
-
-6.  **Closing Connection:** Finally, the client closes its socket, terminating the connection.
-
-    ```cpp
-    close(sock);
-    ```
+    return 0;
+}
+```
 
 ## How the Client Connects to the Server (Docker Context)
 
