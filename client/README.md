@@ -81,12 +81,12 @@ The client's code performs the following main steps:
 
 ## How the Client Connects to the Server (Docker Context)
 
-In our Dockerized setup, the client connects to the server using its container name (`tcp-server-container`) rather than a fixed IP address like `127.0.0.1` (localhost). This is made possible by Docker's internal DNS resolution within a custom bridge network.
+In our Dockerized setup, the client connects to the server using its service name (`server`) rather than a fixed IP address like `127.0.0.1` (localhost). This is made possible by Docker's internal DNS resolution within a custom bridge network.
 
-When you run both the client and server containers on the same Docker network (`my-tcp-network`):
+When you run both the client and server containers on the same Docker network (`app_network`):
 
-1.  The `client` container, when calling `getaddrinfo("tcp-server-container", ...)`, queries Docker's embedded DNS server.
-2.  Docker's DNS resolves `tcp-server-container` to the internal IP address assigned to the `tcp-server-container` within `my-tcp-network`.
+1.  The `client` container, when calling `getaddrinfo("server", ...)`, queries Docker's embedded DNS server.
+2.  Docker's DNS resolves `server` to the internal IP address assigned to the `server` container within `app_network`.
 3.  The client then uses this resolved IP address to establish a standard TCP connection (the three-way handshake) with the server.
 
 This abstraction provided by Docker networking allows services to discover and communicate with each other easily without needing to manage dynamic IP addresses.

@@ -21,7 +21,7 @@ void log_message(const std::string& level, const std::string& message) {
 int main() {
     // Common variables for both requests
     int port = 8080;
-    std::string server_address = "tcp-server-container"; // Use the server container name
+    std::string server_address = "server"; // Use the server container name
 
     // === First Request: GET /hello ===
     int sock = 0;

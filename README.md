@@ -11,7 +11,8 @@ This project demonstrates a basic TCP client-server communication implemented in
 *   [Project Structure](#project-structure)
 *   [Prerequisites](#prerequisites)
 *   [Building the Docker Images](#building-the-docker-images)
-*   [Running the Applications](#running-the-applications)
+*   [Running with Docker Compose](#running-with-docker-compose)
+*   [Running the Applications (Manual Docker Commands)](#running-the-applications-manual-docker-commands)
 *   [How it Works (Docker Networking)](#how-it-works-docker-networking)
 *   [Cleanup Docker Resources](#cleanup-docker-resources)
 *   [Troubleshooting](#troubleshooting)
@@ -73,10 +74,12 @@ networking/
 │   ├── src/
 │   │   └── client.cpp        # C++ source code for the TCP client
 │   └── Dockerfile            # Dockerfile to build the client image
+├── docker-compose.yml       # Defines and runs the multi-container Docker application
 └── README.md                 # This documentation file
 ```
 
 *   `networking/`: The root directory of the project.
+*   `docker-compose.yml`: Defines and runs the multi-container Docker application.
 *   `server/`: Contains all files related to the TCP server application.
 *   `client/`: Contains all files related to the TCP client application.
 
@@ -88,7 +91,7 @@ Before you begin, ensure you have the following installed on your system:
 
 ## Building the Docker Images
 
-Navigate to the root of the `networking` directory in your terminal. From there, execute the following commands to build the Docker images for both the server and client:
+While you can build the images individually, Docker Compose will handle this for you when you bring up the services. If you wish to build them manually, refer to the instructions below.
 
 1.  **Build the Server Image:**
 
@@ -104,9 +107,40 @@ Navigate to the root of the `networking` directory in your terminal. From there,
     ```
     Similarly, this builds the client image and tags it as `tcp-client`.
 
-## Running the Applications
+## Running with Docker Compose
 
-To see the client and server communicate, you'll need to run them as separate Docker containers. We'll use a Docker network to allow them to communicate by name.
+Docker Compose allows you to define and run multi-container Docker applications. With a single command, you can bring up the entire environment.
+
+1.  **Start the Services:**
+
+    Navigate to the root of the `networking` directory in your terminal (where `docker-compose.yml` is located) and run:
+
+    ```bash
+    docker compose up --build
+    ```
+    *   `docker compose up`: Builds, creates, starts, and attaches to containers for all services defined in `docker-compose.yml`.
+    *   `--build`: Builds images before starting containers. This is useful if you've made changes to your Dockerfiles.
+
+    You should see the logs from both the server and client services directly in your terminal. The client will connect to the server, send messages, and display the responses.
+
+2.  **Run in Detached Mode (Background):**
+
+    If you want to run the services in the background, use the `-d` flag:
+
+    ```bash
+    docker compose up -d
+    ```
+
+    To view the logs of individual services running in detached mode:
+
+    ```bash
+    docker compose logs server
+    docker compose logs client
+    ```
+
+## Running the Applications (Manual Docker Commands)
+
+This section details how to run the applications using individual `docker run` commands for a deeper understanding of Docker networking. For a simpler approach, refer to the [Running with Docker Compose](#running-with-docker-compose) section.
 
 1.  **Create a Docker Network:**
 
@@ -157,7 +191,15 @@ This approach simplifies communication between services within Docker, as you do
 
 ## Cleanup Docker Resources
 
-When you are done with the application, you can clean up the Docker containers and network using the following commands:
+When you are done with the application, you can bring down all services defined in your `docker-compose.yml` and remove their containers and networks using:
+
+```bash
+docker compose down
+```
+
+This will stop and remove the containers, networks, and volumes that were created by `docker compose up`.
+
+For manual cleanup of resources created without Docker Compose, use the following commands:
 
 ```bash
 docker stop tcp-server-container tcp-client-container
