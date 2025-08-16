@@ -3,12 +3,24 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <string>
+#include <chrono>   // For std::chrono
+#include <ctime>    // For std::time_t, std::localtime
+#include <iomanip>  // For std::put_time
+
+// Basic logging function
+void log_message(const std::string& level, const std::string& message) {
+    auto now = std::chrono::system_clock::now();
+    std::time_t current_time = std::chrono::system_clock::to_time_t(now);
+
+    std::cout << "[" << std::put_time(std::localtime(&current_time), "%Y-%m-%d %H:%M:%S")
+              << "] [" << level << "] " << message << std::endl;
+}
 
 int main() {
     // 1. Create a socket
     int server_fd;
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("socket failed");
+        log_message("ERROR", "socket failed");
         exit(EXIT_FAILURE);
     }
 
@@ -20,34 +32,34 @@ int main() {
     address.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("bind failed");
+        log_message("ERROR", "bind failed");
         exit(EXIT_FAILURE);
     }
 
     // 3. Listen for incoming connections
     if (listen(server_fd, 3) < 0) { // 3 is the maximum length of the queue of pending connections
-        perror("listen");
+        log_message("ERROR", "listen failed");
         exit(EXIT_FAILURE);
     }
 
-    std::cout << "Server listening on port " << port << std::endl;
+    log_message("INFO", "Server listening on port " + std::to_string(port));
 
     while (true) { // Main server loop to continuously accept connections
         // 4. Accept a client connection
         int client_socket;
         socklen_t addrlen = sizeof(address);
         if ((client_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
-            perror("accept");
+            log_message("ERROR", "accept failed");
             continue; // Continue listening for other connections
         }
-        std::cout << "Client connected!" << std::endl;
+        log_message("INFO", "Client connected!");
 
         // 5. Receive data from the client
         char buffer[1024] = {0};
         long valread = read(client_socket, buffer, 1024);
         std::string client_message(buffer); // Convert char array to std::string
 
-        std::cout << "Client message: " << client_message << std::endl;
+        log_message("INFO", "Client message: " + client_message);
 
         // 6. Send a response back to the client based on the message
         std::string response;
@@ -60,11 +72,11 @@ int main() {
         }
 
         send(client_socket, response.c_str(), response.length(), 0);
-        std::cout << "Response sent to client." << std::endl;
+        log_message("INFO", "Response sent to client.");
 
         // 7. Close the client socket (connection to this specific client)
         close(client_socket);
-        std::cout << "Client disconnected." << std::endl;
+        log_message("INFO", "Client disconnected.");
     }
 
     // The server_fd will typically be closed only when the server application is shut down.
