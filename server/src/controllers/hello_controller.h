@@ -2,7 +2,7 @@
 #define HELLO_CONTROLLER_H
 
 #include <string>
-#include "../httprequest.h"
+#include "../utils/httprequest.h"
 
 std::string getHello(const HttpRequest& request);
 

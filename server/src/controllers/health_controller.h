@@ -2,7 +2,7 @@
 #define HEALTH_CONTROLLER_H
 
 #include <string>
-#include "../httprequest.h"
+#include "../utils/httprequest.h"
 
 std::string getHealthStatus(const HttpRequest& request);
 

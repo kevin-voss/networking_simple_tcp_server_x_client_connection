@@ -2,7 +2,7 @@
 #define BYE_CONTROLLER_H
 
 #include <string>
-#include "../httprequest.h"
+#include "../utils/httprequest.h"
 
 std::string getBye(const HttpRequest& request);
 

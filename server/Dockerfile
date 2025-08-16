@@ -2,12 +2,14 @@ FROM ubuntu:latest
 
 WORKDIR /app
 
-COPY src/ ./
+COPY src/server.cpp .
+COPY src/controllers/ controllers/
+COPY src/utils/ utils/
 
 RUN apt-get update && \
     apt-get install -y build-essential && \
     g++ -c server.cpp -o server.o && \
-    g++ -c httprequest_parser.cpp -o httprequest_parser.o && \
+    g++ -c utils/httprequest_parser.cpp -o httprequest_parser.o && \
     g++ -c controllers/health_controller.cpp -o health_controller.o && \
     g++ -c controllers/metrics_controller.cpp -o metrics_controller.o && \
     g++ -c controllers/hello_controller.cpp -o hello_controller.o && \

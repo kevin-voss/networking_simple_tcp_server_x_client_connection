@@ -73,9 +73,10 @@ networking/
 │   │   │   ├── metrics_controller.cpp
 │   │   │   ├── hello_controller.cpp
 │   │   │   └── bye_controller.cpp
-│   │   ├── httprequest.h         # Defines the HttpRequest struct
-│   │   ├── httprequest_parser.h  # Declares the HttpRequestParser class
-│   │   ├── httprequest_parser.cpp# Implements the HttpRequestParser class
+│   │   ├── utils/            # Directory for utility files
+│   │   │   ├── httprequest.h         # Defines the HttpRequest struct
+│   │   │   ├── httprequest_parser.h  # Declares the HttpRequestParser class
+│   │   │   └── httprequest_parser.cpp# Implements the HttpRequestParser class
 │   │   └── server.cpp        # C++ source code for the TCP server
 │   └── Dockerfile            # Dockerfile to build the server image
 ├── client/
@@ -92,8 +93,9 @@ networking/
 *   `Makefile`: Defines commands for building, running, and managing Docker resources.
 *   `server/`: Contains all files related to the TCP server application.
 *   `server/src/controllers/`: Contains separate source files for different server endpoints (e.g., `/health`, `/metrics`, `/hello`, `/bye`).
-*   `server/src/httprequest.h`: Defines the `HttpRequest` structure used to represent parsed incoming HTTP requests, including method, path, headers, body, and query parameters.
-*   `server/src/httprequest_parser.h` and `server/src/httprequest_parser.cpp`: Provide the logic for parsing raw HTTP requests into a structured `HttpRequest` object, similar to `HttpServletRequest` in Spring Boot.
+*   `server/src/utils/`: Contains utility files, such as the HTTP request parser.
+*   `server/src/utils/httprequest.h`: Defines the `HttpRequest` structure used to represent parsed incoming HTTP requests, including method, path, headers, body, and query parameters.
+*   `server/src/utils/httprequest_parser.h` and `server/src/utils/httprequest_parser.cpp`: Provide the logic for parsing raw HTTP requests into a structured `HttpRequest` object, similar to `HttpServletRequest` in Spring Boot.
 *   `client/`: Contains all files related to the TCP client application.
 
 ## Prerequisites
