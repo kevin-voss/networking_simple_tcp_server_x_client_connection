@@ -6,6 +6,7 @@
 #include <chrono>   // For std::chrono
 #include <ctime>    // For std::time_t, std::localtime
 #include <iomanip>  // For std::put_time
+#include <arpa/inet.h> // Required for inet_ntoa
 
 // Basic logging function
 void log_message(const std::string& level, const std::string& message) {
@@ -52,7 +53,19 @@ int main() {
             log_message("ERROR", "accept failed");
             continue; // Continue listening for other connections
         }
-        log_message("INFO", "Client connected!");
+
+        // Get client IP and port using getpeername
+        struct sockaddr_in client_address;
+        socklen_t client_addrlen = sizeof(client_address);
+        if (getpeername(client_socket, (struct sockaddr *)&client_address, &client_addrlen) == 0) {
+            char client_ip[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &(client_address.sin_addr), client_ip, INET_ADDRSTRLEN);
+            int client_port = ntohs(client_address.sin_port);
+            log_message("INFO", "Client connected from " + std::string(client_ip) + ":" + std::to_string(client_port));
+        } else {
+            log_message("ERROR", "getpeername failed");
+            log_message("INFO", "Client connected!"); // Fallback if getpeername fails
+        }
 
         // 5. Receive data from the client
         char buffer[1024] = {0};

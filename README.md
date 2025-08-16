@@ -13,6 +13,7 @@ This project demonstrates a basic TCP client-server communication implemented in
 *   [Building the Docker Images](#building-the-docker-images)
 *   [Running the Applications](#running-the-applications)
 *   [How it Works (Docker Networking)](#how-it-works-docker-networking)
+*   [Cleanup Docker Resources](#cleanup-docker-resources)
 *   [Troubleshooting](#troubleshooting)
 
 ## Networking Fundamentals
@@ -117,26 +118,29 @@ To see the client and server communicate, you'll need to run them as separate Do
 
 2.  **Run the Server Container:**
 
-    Run the server container, attaching it to the `my-tcp-network` and naming it `tcp-server-container`. We'll also publish port 8080 from the container to port 8080 on your host machine, although for inter-container communication this isn't strictly necessary.
+    Run the server container, attaching it to the `my-tcp-network` and naming it `tcp-server-container`. We will remove the port publishing since the inter-container communication is done via the network.
 
     ```bash
-    docker run -d --network my-tcp-network --name tcp-server-container -p 8080:8080 tcp-server
+    docker run -d --network my-tcp-network --name tcp-server-container networking-server
     ```
     *   `-d`: Runs the container in detached mode (in the background).
     *   `--network my-tcp-network`: Connects the container to the custom network.
     *   `--name tcp-server-container`: Assigns a readable name to the container.
-    *   `-p 8080:8080`: Maps port 8080 inside the container to port 8080 on your host machine. This is useful if you later want to access the server directly from your host.
 
 3.  **Run the Client Container:**
 
     Now, run the client container. The client will connect to `tcp-server-container` (the name of our server container) to send multiple requests. **Note:** The client currently establishes a new connection for each request.
 
     ```bash
-    docker run --network my-tcp-network --name tcp-client-container --rm tcp-client
+    docker run --network my-tcp-network --name tcp-client-container --rm networking-client
     ```
     *   `--rm`: Automatically removes the container once it exits.
 
-    You should see the client's output directly in your terminal, showing it connected to the server, sending `GET /hello`, receiving a response, then reconnecting, sending `GET /bye`, and receiving another response. The server's output can be viewed using `docker logs tcp-server-container`.
+    You should see the client's output directly in your terminal, showing it connected to the server, sending `GET /hello`, receiving a response, then reconnecting, sending `GET /bye`, and receiving another response.
+    To observe the server's behavior and confirm client connections (including their IP addresses and ports), view the server logs:
+    ```bash
+    docker logs tcp-server-container
+    ```
 
 ## How it Works (Docker Networking)
 
@@ -151,6 +155,16 @@ In our setup:
 
 This approach simplifies communication between services within Docker, as you don't need to hardcode IP addresses, which can change.
 
+## Cleanup Docker Resources
+
+When you are done with the application, you can clean up the Docker containers and network using the following commands:
+
+```bash
+docker stop tcp-server-container tcp-client-container
+docker rm tcp-server-container tcp-client-container
+docker network rm my-tcp-network
+```
+
 ## Troubleshooting
 
 *   **"Address already in use" error when running server:**
@@ -164,12 +178,3 @@ This approach simplifies communication between services within Docker, as you do
 *   **Server or client immediately exits:**
     *   Check the logs: `docker logs tcp-server-container` or `docker logs tcp-client-container` to see if there are any C++ runtime errors.
     *   Ensure the C++ code compiles successfully within the Dockerfile (`RUN g++ ...`).
-
-*   **Clean up Docker resources:**
-    If you encounter issues or want to start fresh, you can stop and remove the containers and network:
-    ```bash
-    docker stop tcp-client-container tcp-server-container
-    docker rm tcp-client-container tcp-server-container
-    docker network rm my-tcp-network
-    docker rmi tcp-client tcp-server # To remove images as well
-    ```

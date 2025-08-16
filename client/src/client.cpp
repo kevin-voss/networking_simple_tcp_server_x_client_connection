@@ -21,7 +21,7 @@ void log_message(const std::string& level, const std::string& message) {
 int main() {
     // Common variables for both requests
     int port = 8080;
-    std::string server_name = "tcp-server-container"; // Use the server container name
+    std::string server_address = "tcp-server-container"; // Use the server container name
 
     // === First Request: GET /hello ===
     int sock = 0;
@@ -32,7 +32,7 @@ int main() {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((status = getaddrinfo(server_name.c_str(), std::to_string(port).c_str(), &hints, &res)) != 0) {
+    if ((status = getaddrinfo(server_address.c_str(), std::to_string(port).c_str(), &hints, &res)) != 0) {
         log_message("ERROR", "getaddrinfo for /hello: " + std::string(gai_strerror(status)));
         return 1;
     }
@@ -84,7 +84,7 @@ int main() {
     hints_bye.ai_family = AF_UNSPEC;
     hints_bye.ai_socktype = SOCK_STREAM;
 
-    if ((status_bye = getaddrinfo(server_name.c_str(), std::to_string(port).c_str(), &hints_bye, &res_bye)) != 0) {
+    if ((status_bye = getaddrinfo(server_address.c_str(), std::to_string(port).c_str(), &hints_bye, &res_bye)) != 0) {
         log_message("ERROR", "getaddrinfo for /bye: " + std::string(gai_strerror(status_bye)));
         return 1;
     }
