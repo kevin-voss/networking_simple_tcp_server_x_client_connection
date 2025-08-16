@@ -8,9 +8,15 @@
 #include <chrono>    // For std::chrono
 #include <ctime>     // For std::time_t, std::localtime
 #include <iomanip>   // For std::put_time
+#include <thread>    // Required for std::thread
+#include <mutex>     // Required for std::mutex
+
+// Mutex for thread-safe logging
+std::mutex log_mutex;
 
 // Basic logging function
 void log_message(const std::string& level, const std::string& message) {
+    std::lock_guard<std::mutex> guard(log_mutex);
     auto now = std::chrono::system_clock::now();
     std::time_t current_time = std::chrono::system_clock::to_time_t(now);
 
@@ -20,6 +26,8 @@ void log_message(const std::string& level, const std::string& message) {
 
 // Function to send a GET request and receive a response
 std::string fetch(const std::string& path, const std::string& server_address, int port) {
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     int sock = 0;
     struct addrinfo hints, *res, *p;
     int status;
@@ -67,25 +75,42 @@ std::string fetch(const std::string& path, const std::string& server_address, in
     close(sock);
     log_message("INFO", "Closed connection to server for " + path + ".");
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    log_message("INFO", "Request to " + path + " took " + std::to_string(duration.count()) + " ms.");
+
     return response;
 }
 
+// Helper function to send a request in a separate thread
+void send_request(const std::string& path, const std::string& server_address, int port) {
+    log_message("INFO", "----------------------------------------");
+    log_message("INFO", "Starting request for: " + path);
+    fetch(path, server_address, port);
+    log_message("INFO", "Finished request for: " + path);
+    log_message("INFO", "----------------------------------------");
+}
+
 int main() {
-    // Common variables for both requests
+    // Common variables for all requests
     int port = 8080;
     std::string server_address = "server"; // Use the server container name
 
-    // === First Request: GET /hello ===
-    fetch("/hello", server_address, port);
+    log_message("INFO", "Launching client threads...");
 
-    // === Second Request: GET /bye ===
-    fetch("/bye", server_address, port);
+    // Create threads for each request
+    std::thread thread1(send_request, "/hello?block=5", server_address, port);
+    std::thread thread2(send_request, "/bye", server_address, port);
+    std::thread thread3(send_request, "/health", server_address, port);
+    std::thread thread4(send_request, "/metrics", server_address, port);
 
-    // === Third Request: GET /health ===
-    fetch("/health", server_address, port);
+    // Join threads to wait for their completion
+    thread1.join();
+    thread2.join();
+    thread3.join();
+    thread4.join();
 
-    // === Fourth Request: GET /metrics ===
-    fetch("/metrics", server_address, port);
+    log_message("INFO", "All client requests sent and responses received.");
 
     return 0;
 }

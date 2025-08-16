@@ -98,6 +98,27 @@ networking/
 *   `server/src/utils/httprequest_parser.h` and `server/src/utils/httprequest_parser.cpp`: Provide the logic for parsing raw HTTP requests into a structured `HttpRequest` object, similar to `HttpServletRequest` in Spring Boot.
 *   `client/`: Contains all files related to the TCP client application.
 
+## Server Concurrency with Multithreading
+
+To enhance the server's ability to handle multiple client connections simultaneously, the `server.cpp` has been modified to implement multithreading. Each incoming client connection is now processed in its own dedicated thread. This design significantly improves the server's scalability and responsiveness, as it prevents a single slow client from blocking other incoming requests. The main server loop continues to accept new connections, immediately offloading their handling to a new thread, allowing for concurrent processing.
+
+### Simulating a Blocked Thread
+
+To test the server's multithreading capabilities and observe how it handles delayed responses, a new feature has been added: you can now simulate a blocked thread for a specified duration. This is achieved by including a `block` query parameter in your HTTP GET request to any endpoint (e.g., `/hello?block=5`).
+
+When the `block` parameter is present, the server thread handling that specific request will pause for the specified number of seconds before sending a response. This allows you to observe:
+
+*   **Concurrent Handling:** How other client requests are still processed without being blocked by the delayed thread.
+*   **Thread Behavior:** The server logs will show when a thread is blocking and when it unblocks.
+
+**Example Request (simulating a 5-second block):**
+
+```
+GET /hello?block=5 HTTP/1.1
+Host: localhost:8080
+
+```
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
