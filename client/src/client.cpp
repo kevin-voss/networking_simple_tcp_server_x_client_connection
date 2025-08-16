@@ -124,5 +124,103 @@ int main() {
     close(sock_bye);
     log_message("INFO", "Closed second connection to server.");
 
+    // === Third Request: GET /health ===
+    int sock_health = 0;
+    struct addrinfo hints_health, *res_health, *p_health;
+    int status_health;
+
+    memset(&hints_health, 0, sizeof hints_health);
+    hints_health.ai_family = AF_UNSPEC;
+    hints_health.ai_socktype = SOCK_STREAM;
+
+    if ((status_health = getaddrinfo(server_address.c_str(), std::to_string(port).c_str(), &hints_health, &res_health)) != 0) {
+        log_message("ERROR", "getaddrinfo for /health: " + std::string(gai_strerror(status_health)));
+        return 1;
+    }
+
+    for(p_health = res_health; p_health != NULL; p_health = p_health->ai_next) {
+        if ((sock_health = socket(p_health->ai_family, p_health->ai_socktype, p_health->ai_protocol)) == -1) {
+            log_message("ERROR", "client /health: socket failed");
+            continue;
+        }
+
+        if (connect(sock_health, p_health->ai_addr, p_health->ai_addrlen) == -1) {
+            close(sock_health);
+            log_message("ERROR", "client /health: connect failed");
+            continue;
+        }
+        break;
+    }
+
+    if (p_health == NULL) {
+        log_message("ERROR", "client /health: failed to connect");
+        return 2;
+    }
+    freeaddrinfo(res_health);
+    log_message("INFO", "Re-connected to server for /health request.");
+
+    // Send GET /health request on the new connection
+    std::string health_message = "GET /health\n";
+    send(sock_health, health_message.c_str(), health_message.length(), 0);
+    log_message("INFO", "Message sent: " + health_message);
+
+    // Receive response for /health
+    char buffer_health[1024] = {0};
+    read(sock_health, buffer_health, 1024);
+    log_message("INFO", "Server response for /health: " + std::string(buffer_health));
+
+    // Close the third socket
+    close(sock_health);
+    log_message("INFO", "Closed third connection to server.");
+
+    // === Fourth Request: GET /metrics ===
+    int sock_metrics = 0;
+    struct addrinfo hints_metrics, *res_metrics, *p_metrics;
+    int status_metrics;
+
+    memset(&hints_metrics, 0, sizeof hints_metrics);
+    hints_metrics.ai_family = AF_UNSPEC;
+    hints_metrics.ai_socktype = SOCK_STREAM;
+
+    if ((status_metrics = getaddrinfo(server_address.c_str(), std::to_string(port).c_str(), &hints_metrics, &res_metrics)) != 0) {
+        log_message("ERROR", "getaddrinfo for /metrics: " + std::string(gai_strerror(status_metrics)));
+        return 1;
+    }
+
+    for(p_metrics = res_metrics; p_metrics != NULL; p_metrics = p_metrics->ai_next) {
+        if ((sock_metrics = socket(p_metrics->ai_family, p_metrics->ai_socktype, p_metrics->ai_protocol)) == -1) {
+            log_message("ERROR", "client /metrics: socket failed");
+            continue;
+        }
+
+        if (connect(sock_metrics, p_metrics->ai_addr, p_metrics->ai_addrlen) == -1) {
+            close(sock_metrics);
+            log_message("ERROR", "client /metrics: connect failed");
+            continue;
+        }
+        break;
+    }
+
+    if (p_metrics == NULL) {
+        log_message("ERROR", "client /metrics: failed to connect");
+        return 2;
+    }
+    freeaddrinfo(res_metrics);
+    log_message("INFO", "Re-connected to server for /metrics request.");
+
+    // Send GET /metrics request on the new connection
+    std::string metrics_message = "GET /metrics\n";
+    send(sock_metrics, metrics_message.c_str(), metrics_message.length(), 0);
+    log_message("INFO", "Message sent: " + metrics_message);
+
+    // Receive response for /metrics
+    char buffer_metrics[1024] = {0};
+    read(sock_metrics, buffer_metrics, 1024);
+    log_message("INFO", "Server response for /metrics: " + std::string(buffer_metrics));
+
+    // Close the fourth socket
+    close(sock_metrics);
+    log_message("INFO", "Closed fourth connection to server.");
+
     return 0;
 }

@@ -7,6 +7,8 @@
 #include <ctime>    // For std::time_t, std::localtime
 #include <iomanip>  // For std::put_time
 #include <arpa/inet.h> // Required for inet_ntoa
+#include "controllers/health_controller.h"
+#include "controllers/metrics_controller.h"
 
 // Basic logging function
 void log_message(const std::string& level, const std::string& message) {
@@ -76,7 +78,11 @@ int main() {
 
         // 6. Send a response back to the client based on the message
         std::string response;
-        if (client_message.find("GET /hello") != std::string::npos) {
+        if (client_message.find("GET /health") != std::string::npos) {
+            response = getHealthStatus();
+        } else if (client_message.find("GET /metrics") != std::string::npos) {
+            response = getMetrics();
+        } else if (client_message.find("GET /hello") != std::string::npos) {
             response = "HTTP/1.1 200 OK\nContent-Type: text/plain\n\nHello, World!\n";
         } else if (client_message.find("GET /bye") != std::string::npos) {
             response = "HTTP/1.1 200 OK\nContent-Type: text/plain\n\nGoodbye!\n";

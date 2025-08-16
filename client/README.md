@@ -54,6 +54,14 @@ The client's code performs the following main steps:
     read(sock, buffer_hello, 1024);
     std::cout << "Server response for /hello: " << buffer_hello << std::endl;
 
+    // You can now also try with other endpoints like /health or /metrics
+    // For example:
+    // std::string health_message = "GET /health\n";
+    // send(sock, health_message.c_str(), health_message.length(), 0);
+    // char buffer_health[1024] = {0};
+    // read(sock, buffer_health, 1024);
+    // std::cout << "Server response for /health: " << buffer_health << std::endl;
+
     // Send GET /bye request
     std::string bye_message = "GET /bye\n";
     send(sock, bye_message.c_str(), bye_message.length(), 0);

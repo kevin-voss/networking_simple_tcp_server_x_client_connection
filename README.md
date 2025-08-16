@@ -68,6 +68,9 @@ The project is organized into a clear and intuitive directory structure:
 networking/
 ├── server/
 │   ├── src/
+│   │   ├── controllers/      # Directory for endpoint logic
+│   │   │   ├── health_controller.cpp
+│   │   │   └── metrics_controller.cpp
 │   │   └── server.cpp        # C++ source code for the TCP server
 │   └── Dockerfile            # Dockerfile to build the server image
 ├── client/
@@ -83,6 +86,7 @@ networking/
 *   `docker-compose.yml`: Defines and runs the multi-container Docker application.
 *   `Makefile`: Defines commands for building, running, and managing Docker resources.
 *   `server/`: Contains all files related to the TCP server application.
+*   `server/src/controllers/`: Contains separate source files for different server endpoints.
 *   `client/`: Contains all files related to the TCP client application.
 
 ## Prerequisites
@@ -156,7 +160,7 @@ This section details how to run the applications using individual `docker run` c
     ```
     *   `--rm`: Automatically removes the container once it exits.
 
-    You should see the client's output directly in your terminal, showing it connected to the server, sending `GET /hello`, receiving a response, then reconnecting, sending `GET /bye`, and receiving another response.
+    You should see the client's output directly in your terminal, showing it connected to the server, sending `GET /hello`, receiving a response, then reconnecting, sending `GET /bye`, and receiving another response. Now, the server also supports `/health` and `/metrics` endpoints. You can modify `client.cpp` to experiment with these new endpoints.
     To observe the server's behavior and confirm client connections (including their IP addresses and ports), view the server logs:
     ```bash
     docker logs tcp-server-container
