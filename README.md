@@ -75,11 +75,13 @@ networking/
 │   │   └── client.cpp        # C++ source code for the TCP client
 │   └── Dockerfile            # Dockerfile to build the client image
 ├── docker-compose.yml       # Defines and runs the multi-container Docker application
+├── Makefile                 # Defines commands for building, running, and managing Docker resources
 └── README.md                 # This documentation file
 ```
 
 *   `networking/`: The root directory of the project.
 *   `docker-compose.yml`: Defines and runs the multi-container Docker application.
+*   `Makefile`: Defines commands for building, running, and managing Docker resources.
 *   `server/`: Contains all files related to the TCP server application.
 *   `client/`: Contains all files related to the TCP client application.
 
@@ -88,55 +90,39 @@ networking/
 Before you begin, ensure you have the following installed on your system:
 
 *   **Docker:** Used to build and run the containerized C++ applications. You can download Docker Desktop from [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop).
+*   **Make (Optional for Windows):** The `Makefile` provides convenient commands for managing Docker services. If you are on Windows and encounter an error like "make : The term 'make' is not recognized...", you may need to install it. It's commonly included with [Git for Windows](https://git-scm.com/download/win) (select "Use Git from the Windows Command Prompt" during installation) or can be installed via package managers like [Chocolatey](https://chocolatey.org/packages/make).
+    Alternatively, you can directly use the `docker compose` commands shown in the "Building the Docker Images", "Running with Docker Compose", and "Cleanup Docker Resources" sections.
 
 ## Building the Docker Images
 
-While you can build the images individually, Docker Compose will handle this for you when you bring up the services. If you wish to build them manually, refer to the instructions below.
+To build the Docker images for both the server and client, navigate to the root of the `networking` directory in your terminal and run:
 
-1.  **Build the Server Image:**
-
-    ```bash
-    docker build -t tcp-server ./server
-    ```
-    This command tells Docker to build an image from the `server` directory, tagging it as `tcp-server`.
-
-2.  **Build the Client Image:**
-
-    ```bash
-    docker build -t tcp-client ./client
-    ```
-    Similarly, this builds the client image and tags it as `tcp-client`.
+```bash
+make build
+```
+This command uses `docker compose build` internally to build both `server` and `client` images.
 
 ## Running with Docker Compose
 
-Docker Compose allows you to define and run multi-container Docker applications. With a single command, you can bring up the entire environment.
+Docker Compose allows you to define and run multi-container Docker applications. With a single command, you can bring up the entire environment. We've provided convenient Makefile targets to simplify these operations.
 
 1.  **Start the Services:**
 
-    Navigate to the root of the `networking` directory in your terminal (where `docker-compose.yml` is located) and run:
+    Navigate to the root of the `networking` directory in your terminal (where `Makefile` and `docker-compose.yml` are located) and run:
 
     ```bash
-    docker compose up --build
+    make up
     ```
-    *   `docker compose up`: Builds, creates, starts, and attaches to containers for all services defined in `docker-compose.yml`.
-    *   `--build`: Builds images before starting containers. This is useful if you've made changes to your Dockerfiles.
+    This command uses `docker compose up -d` internally to build (if not already built), create, start, and attach to containers for all services defined in `docker-compose.yml` in detached mode.
 
-    You should see the logs from both the server and client services directly in your terminal. The client will connect to the server, send messages, and display the responses.
+2.  **View Logs:**
 
-2.  **Run in Detached Mode (Background):**
-
-    If you want to run the services in the background, use the `-d` flag:
+    To view the logs from all running services:
 
     ```bash
-    docker compose up -d
+    make logs
     ```
-
-    To view the logs of individual services running in detached mode:
-
-    ```bash
-    docker compose logs server
-    docker compose logs client
-    ```
+    This command internally runs `docker compose logs`.
 
 ## Running the Applications (Manual Docker Commands)
 
@@ -191,13 +177,19 @@ This approach simplifies communication between services within Docker, as you do
 
 ## Cleanup Docker Resources
 
-When you are done with the application, you can bring down all services defined in your `docker-compose.yml` and remove their containers and networks using:
+To stop and remove all services, containers, and networks created by Docker Compose, navigate to the root of the `networking` directory and run:
 
 ```bash
-docker compose down
+make down
 ```
+This command internally runs `docker compose down`.
 
-This will stop and remove the containers, networks, and volumes that were created by `docker compose up`.
+To stop and remove all Docker resources created by the project, including images and volumes, run:
+
+```bash
+make clean
+```
+This command internally runs `docker compose down --rmi all --volumes --remove-orphans`.
 
 For manual cleanup of resources created without Docker Compose, use the following commands:
 
