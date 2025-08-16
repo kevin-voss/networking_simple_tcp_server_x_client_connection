@@ -1,21 +1,99 @@
 # C++ TCP Client-Server with Docker
 
-This project demonstrates a basic TCP client-server communication implemented in C++ and containerized using Docker. It provides a foundational understanding of network programming with TCP and how to deploy interconnected applications in a Dockerized environment.
+This project provides a comprehensive demonstration of TCP client-server communication implemented in C++ and containerized using Docker. It offers a foundational understanding of network programming concepts, including the OSI model and TCP mechanics, while showcasing modern deployment practices with Docker and Docker Compose.
+
+**Key Features:**
+
+*   **Multithreaded Server:** The server is designed to handle each incoming client connection in a separate thread, significantly improving scalability and responsiveness by allowing concurrent processing of requests.
+*   **Interactive Client:** The client application runs in an interactive mode, enabling users to manually send multiple HTTP GET requests to the server, including requests designed to simulate blocked threads for testing concurrency.
+*   **Detailed Logging:** Both the client and server include enhanced logging with timestamps and request durations, providing clear insights into the communication flow and thread behavior.
+*   **Dockerized Environment:** The entire client-server system is containerized using Docker, with Docker Compose facilitating easy setup, management, and networking between services.
 
 ## Table of Contents
 
+*   [Guide: Building and Testing the Project](#guide-building-and-testing-the-project)
+*   [Prerequisites](#prerequisites)
 *   [Networking Fundamentals](#networking-fundamentals)
     *   [The OSI Model (Simplified)](#the-osi-model-simplified)
     *   [Why TCP?](#why-tcp)
     *   [How TCP Works (Simplified Handshake)](#how-tcp-works-simplified-handshake)
 *   [Project Structure](#project-structure)
-*   [Prerequisites](#prerequisites)
-*   [Building the Docker Images](#building-the-docker-images)
-*   [Running with Docker Compose](#running-with-docker-compose)
+*   [Server Concurrency with Multithreading](#server-concurrency-with-multithreading)
+    *   [Simulating a Blocked Thread](#simulating-a-blocked-thread)
 *   [Running the Applications (Manual Docker Commands)](#running-the-applications-manual-docker-commands)
 *   [How it Works (Docker Networking)](#how-it-works-docker-networking)
 *   [Cleanup Docker Resources](#cleanup-docker-resources)
 *   [Troubleshooting](#troubleshooting)
+
+## Guide: Building and Testing the Project
+
+This section provides a step-by-step guide on how to build the Docker images, start the services, and interact with the client application to test the multithreaded server.
+
+1.  **Build the Docker Images:**
+
+    Navigate to the root of the `networking` directory in your terminal (where `Makefile` and `docker-compose.yml` are located) and run:
+
+    ```bash
+    make build
+    ```
+    This command uses `docker compose build` internally to build both `server` and `client` images.
+
+2.  **Start the Services:**
+
+    Start the server and client containers in detached mode.
+
+    ```bash
+    make up
+    ```
+    This command uses `docker compose up -d` internally to build (if not already built), create, start, and attach to containers for all services defined in `docker-compose.yml` in detached mode.
+
+3.  **Interact with the Client (Interactive Mode):**
+
+    The client application has been updated to run in an interactive mode, allowing you to send multiple requests to the server manually. After starting the services (using `make up` or `docker compose up -d`), you can execute commands inside the running client container.
+
+    a.  **Execute into the Client Container:**
+
+        Open a new terminal and run the following command to get a shell inside the `networking-client-1` container:
+
+        ```bash
+        docker exec -it networking-client-1 /bin/bash
+        ```
+
+    b.  **Run the Client Application and Send Requests:**
+
+        Once inside the client container's shell, run the client executable. It will prompt you to enter request paths.
+
+        ```bash
+        ./client
+        ```
+
+        Now, you can type your desired request path and press Enter. For example:
+
+        ```
+        Enter request path (e.g., /hello or /metrics?block=3), or 'exit' to quit: /hello
+        Enter request path (e.g., /hello or /metrics?block=3), or 'exit' to quit: /metrics?block=3
+        Enter request path (e.g., /hello or /metrics?block=3), or 'exit' to quit: /bye
+        Enter request path (e.g., /hello or /metrics?block=3), or 'exit' to quit: exit
+        ```
+
+        Each request will be sent to the server in a new thread, and you will see the client's log output directly in your terminal, including request durations.
+
+4.  **View Logs (Server and Client):**
+
+    To view the combined logs from both the server and client services (including the requests you manually sent from the interactive client), open another terminal and run:
+
+    ```bash
+    make logs
+    ```
+    This command internally runs `docker compose logs`.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+*   **Docker:** Used to build and run the containerized C++ applications. You can download Docker Desktop from [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop).
+*   **Make (Optional for Windows):** The `Makefile` provides convenient commands for managing Docker services. If you are on Windows and encounter an error like "make : The term 'make' is not recognized...", you may need to install it. It's commonly included with [Git for Windows](https://git-scm.com/download/win) (select "Use Git from the Windows Command Prompt" during installation) or can be installed via package managers like [Chocolatey](https://chocolatey.org/packages/make).
+    Alternatively, you can directly use the `docker compose` commands shown in this guide.
 
 ## Networking Fundamentals
 
@@ -56,7 +134,7 @@ The establishment of a TCP connection begins with a three-way handshake:
 
 1.  **SYN (Synchronize):** The client initiates the connection by sending a TCP segment with the SYN flag set (SYN=1) to the server. This segment includes a randomly generated initial sequence number (ISN) from the client.
 
-2.  **SYN-ACK (Synchronize-Acknowledgment):** Upon receiving the client's SYN, the server responds with a SYN-ACK segment. This segment has both the SYN and ACK flags set (SYN=1, ACK=1). The ACK acknowledges the client's ISN (by sending ISN + 1), and the server also sends its own ISN. 
+2.  **SYN-ACK (Synchronize-Acknowledgment):** Upon receiving the client's SYN, the server responds with a SYN-ACK segment. This segment has both the SYN and ACK flags set (SYN=1, ACK=1). The ACK acknowledges the client's ISN (by sending ISN + 1), and the server also sends its own ISN.
 
 3.  **ACK (Acknowledgment):** Finally, the client sends an ACK segment to the server. This segment acknowledges the server's ISN (by sending server's ISN + 1). Once this ACK is received by the server, the three-way handshake is complete, and a full-duplex connection is established. Both the client and server can now send and receive data.
 
@@ -119,48 +197,9 @@ Host: localhost:8080
 
 ```
 
-## Prerequisites
-
-Before you begin, ensure you have the following installed on your system:
-
-*   **Docker:** Used to build and run the containerized C++ applications. You can download Docker Desktop from [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop).
-*   **Make (Optional for Windows):** The `Makefile` provides convenient commands for managing Docker services. If you are on Windows and encounter an error like "make : The term 'make' is not recognized...", you may need to install it. It's commonly included with [Git for Windows](https://git-scm.com/download/win) (select "Use Git from the Windows Command Prompt" during installation) or can be installed via package managers like [Chocolatey](https://chocolatey.org/packages/make).
-    Alternatively, you can directly use the `docker compose` commands shown in the "Building the Docker Images", "Running with Docker Compose", and "Cleanup Docker Resources" sections.
-
-## Building the Docker Images
-
-To build the Docker images for both the server and client, navigate to the root of the `networking` directory in your terminal and run:
-
-```bash
-make build
-```
-This command uses `docker compose build` internally to build both `server` and `client` images.
-
-## Running with Docker Compose
-
-Docker Compose allows you to define and run multi-container Docker applications. With a single command, you can bring up the entire environment. We've provided convenient Makefile targets to simplify these operations.
-
-1.  **Start the Services:**
-
-    Navigate to the root of the `networking` directory in your terminal (where `Makefile` and `docker-compose.yml` are located) and run:
-
-    ```bash
-    make up
-    ```
-    This command uses `docker compose up -d` internally to build (if not already built), create, start, and attach to containers for all services defined in `docker-compose.yml` in detached mode.
-
-2.  **View Logs:**
-
-    To view the logs from all running services:
-
-    ```bash
-    make logs
-    ```
-    This command internally runs `docker compose logs`.
-
 ## Running the Applications (Manual Docker Commands)
 
-This section details how to run the applications using individual `docker run` commands for a deeper understanding of Docker networking. For a simpler approach, refer to the [Running with Docker Compose](#running-with-docker-compose) section.
+This section details how to run the applications using individual `docker run` commands for a deeper understanding of Docker networking. For a simpler approach, refer to the [Guide: Building and Testing the Project](#guide-building-and-testing-the-project) section.
 
 1.  **Create a Docker Network:**
 
@@ -186,12 +225,14 @@ This section details how to run the applications using individual `docker run` c
     Now, run the client container. The client will connect to `tcp-server-container` (the name of our server container) to send multiple requests. **Note:** The client currently establishes a new connection for each request.
 
     ```bash
-    docker run --network my-tcp-network --name tcp-client-container --rm networking-client
+    docker run -d --network my-tcp-network --name tcp-client-container networking-client
     ```
-    *   `--rm`: Automatically removes the container once it exits.
+    *   `-d`: Runs the container in detached mode (in the background). This is important because the client container will now stay alive for interactive use.
 
-    You should see the client's output directly in your terminal, showing it connected to the server, sending `GET /hello`, receiving a response, then reconnecting, sending `GET /bye`, and receiving another response. Now, the server also supports `/health` and `/metrics` endpoints. The client has also been refactored to use a `fetch` function to simplify sending multiple requests.
+    To interact with the client and send requests manually, follow steps 3.a and 3.b from the [Guide: Building and Testing the Project](#guide-building-and-testing-the-project) section.
+
     To observe the server's behavior and confirm client connections (including their IP addresses and ports), view the server logs:
+
     ```bash
     docker logs tcp-server-container
     ```

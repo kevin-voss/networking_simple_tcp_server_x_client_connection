@@ -8,4 +8,4 @@ RUN apt-get update && \
     apt-get install -y build-essential && \
     g++ client.cpp -o client -pthread
 
-CMD ["./client"]
+CMD ["tail", "-f", "/dev/null"]

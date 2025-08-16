@@ -112,5 +112,24 @@ int main() {
 
     log_message("INFO", "All client requests sent and responses received.");
 
+    std::string input_path;
+    while (true) {
+        std::cout << "Enter request path (e.g., /hello or /metrics?block=3), or 'exit' to quit: " << std::endl;
+        std::getline(std::cin, input_path);
+
+        if (input_path == "exit") {
+            log_message("INFO", "Exiting client.");
+            break;
+        }
+
+        if (input_path.empty()) {
+            log_message("WARN", "Empty input. Please enter a valid path.");
+            continue;
+        }
+
+        // Create a new thread to send the request
+        std::thread(send_request, input_path, server_address, port).detach();
+    }
+
     return 0;
 }
